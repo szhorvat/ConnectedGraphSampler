@@ -70,13 +70,13 @@ public:
         return logprob;
     }
 
-    mma::IntMatrixRef generateSample() {
-        std::tie(edges, logprob) = CDS::sample(*ds, rng);
+    mma::IntMatrixRef generateSample(double alpha) {
+        std::tie(edges, logprob) = CDS::sample(*ds, alpha, rng);
         return getEdges();
     }
 
-    mma::IntMatrixRef generateConnSample() {
-        std::tie(edges, logprob) = CDS::sample_conn(*ds, rng);
+    mma::IntMatrixRef generateConnSample(double alpha) {
+        std::tie(edges, logprob) = CDS::sample_conn(*ds, alpha, rng);
         return getEdges();
     }
 };

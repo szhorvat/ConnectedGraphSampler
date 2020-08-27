@@ -15,6 +15,7 @@ typedef int deg_t;
 typedef std::pair<int, int> edge;
 typedef std::vector<edge> edgelist_t;
 
+typedef std::vector<char> bitmask_t;
 
 template<typename T>
 T sqr(const T &x) { return x*x; }

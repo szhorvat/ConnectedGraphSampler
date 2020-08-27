@@ -12,6 +12,8 @@ namespace CDS {
 
 using std::vector;
 
+// Stores a degree sequence of degrees 0 <= d < n.
+// Keeps track of information useful for sampling simple graphs.
 class DegreeSequence {
 
     vector<deg_t> degseq;     // the degree sequence
@@ -26,8 +28,8 @@ class DegreeSequence {
     int n_nonzero;            // number of non-zero degrees
     int dsum;                 // the sum of degrees
 
-    // d(i) returns d_i in the non-increasingly sorted degree sequence
-    // note that i is assumed to use 1-based indexing!
+    // d(i) returns d_i in the non-increasingly sorted degree sequence.
+    // Note that i is assumed to use 1-based indexing!
     deg_t d(int i) const { return degseq[sorted_verts[n - i]]; }
 
 public:
@@ -43,11 +45,11 @@ public:
         sorted_verts(n), sorted_index(n),
         accum_counts(n)
     {
-        // initialize sorted_verts
+        // Initialize sorted_verts
         std::iota(sorted_verts.begin(), sorted_verts.end(), 0);
         std::sort(sorted_verts.begin(), sorted_verts.end(), [this] (int u, int v) { return degseq[u] < degseq[v]; } );
 
-        // initialize sorted_index
+        // Initialize sorted_index
         for (int i=0; i < n; ++i)
             sorted_index[sorted_verts[i]] = i;
 
@@ -83,7 +85,7 @@ public:
             throw std::invalid_argument("The degree sequence is not graphical.");
         */
 
-        // initialize accum_counts
+        // Initialize accum_counts
         std::partial_sum(deg_counts.begin(), deg_counts.end(), accum_counts.begin());
     }
 
@@ -104,7 +106,7 @@ public:
             n_nonzero--;
 
         if (d == dmin) {
-            // we only let dmin drop to 0 if there are no more non-zero degrees left
+            // We only let dmin drop to 0 if there are no more non-zero degrees left
             if (dmin > 1 || n_nonzero == 0)
                 dmin -= 1;
         }
@@ -119,7 +121,6 @@ public:
         std::swap(sorted_verts[si_old], sorted_verts[si_new]);
 
         accum_counts[d-1]++;
-
     }
 
     // Increment the degree of vertex u, O(1)
@@ -192,6 +193,10 @@ public:
     }
 
     // The smallest degree which may be connected to without breaking graphicality, O(n)
+    // Before calling this function, all but one degree of the current vertex must have been
+    // connected to the largest non-excluded other degrees, then the current vertex must have
+    // been removed. Thefore, at this point the degree sum is odd. We check which degree
+    // may be decremented by one (i.e. connected to) while maintaining the Erdős-Gallai inequalities.
     deg_t watershed() const {
         int wd = 0; // the watershed degree
 
@@ -238,11 +243,13 @@ public:
     const vector<deg_t> &degrees() const { return degseq; }
     const vector<int> &degree_distribution() const { return deg_counts; }
 
-    template<typename RNG>
-    friend std::tuple<edgelist_t, double> sample(DegreeSequence ds, RNG &rng);
+    // Sampling functions have access to internals:
 
     template<typename RNG>
-    friend std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, RNG &rng);
+    friend std::tuple<edgelist_t, double> sample(DegreeSequence ds, double alpha, RNG &rng);
+
+    template<typename RNG>
+    friend std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG &rng);
 };
 
 } // namespace CDS

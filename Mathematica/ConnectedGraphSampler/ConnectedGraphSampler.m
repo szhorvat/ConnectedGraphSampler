@@ -34,8 +34,11 @@ CGSSample::usage =
     "CGSSample[degrees] generates a biased sample from the set of graphs with the given degrees. The result is returned in the form {graph, Log[samplingWeight]}.\n" <>
     "CGSSample[degrees, Connected -> True] samples only connected graphs.\n" <>
     "CGSSample[degrees, n] generates n biased samples.";
+CGSSampleWeights::usage = "CGSSampleWeights[degrees, n]";
 CGSSampleProp::usage =
     "CGSSampleProp[degrees, prop, n] generates n random graphs of the given degrees, computed prop[graph] for each, then returns the obtained weighted samples as a WeightedData. Use Connected -> True to sample only connected graphs.";
+CGSSamplePropRaw::usage = "CGSSamplePropRaw[degrees, prop, n] generates n random graphs of the given degrees, computed prop[graph] for each, then returns the obtained weighted samples as a list of {value, Log[samplingWeight]} pairs. Use Connected -> True to sample only connected graphs.";
+CGSToWeightedData::usage = "CGSToWeightedData[samples] converts a list of {value, Log[samplingWeight]} pairs to a WeightedData expression.";
 CGSGraphicalQ::usage = "CGSGraphicalQ[degrees] tests if degrees are realized by a simple graph.";
 CGSPotentiallyConnectedQ::usage = "CGSPotentiallyConnectedQ[degrees] tests if degrees are potentially connected.";
 Connected
@@ -75,11 +78,11 @@ If[Not@MemberQ[$LibraryPath, $libraryDirectory],
 template =
     LClass["ConnectedGraphSampler",
       {
-        LFun["setDS", {{Integer, 1, "Constant"}}, "Void"],
+        LFun["setDS", {{Integer, 1, "Constant"} (* degree sequence *)}, "Void"],
         LFun["getDS", {}, {Integer, 1}],
         LFun["seed", {Integer}, "Void"],
-        LFun["generateSample", {}, {Integer, 2}],
-        LFun["generateConnSample", {}, {Integer, 2}],
+        LFun["generateSample", {Real (* alpha *)}, {Integer, 2}],
+        LFun["generateConnSample", {Real (* alpha *)}, {Integer, 2}],
         LFun["getEdges", {}, {Integer, 2}],
         LFun["getLogProb", {}, Real],
         LFun["graphicalQ", {}, True|False]
@@ -108,7 +111,7 @@ Recompile[] :=
       ];
       (* compile code *)
       SetDirectory[$sourceDirectory];
-      CompileTemplate[template, { (* TODO add any extra .cpp source files to be included in the compilation *) },
+      CompileTemplate[template,
         "ShellCommandFunction" -> Print, "ShellOutputFunction" -> Print,
         "TargetDirectory" -> $libraryDirectory,
         Sequence @@ $buildSettings
@@ -182,44 +185,93 @@ CGSPotentiallyConnectedQ[degrees : {___Integer}] :=
 Options[CGSSample] =
     Join[
       Options[Graph],
-      { Connected -> False }
+      {
+        Connected -> False,
+        RandomSeeding -> Automatic,
+        Exponent -> 1
+      }
     ];
 SyntaxInformation[CGSSample] = {"ArgumentsPattern" -> {_, _., OptionsPattern[]}};
 CGSSample[degrees_, n_Integer ? NonNegative, opt : OptionsPattern[]] :=
     catch@Block[{sampler = Make["ConnectedGraphSampler"]},
       check@sampler@"setDS"[degrees];
+      sampler@"seed"[ Replace[OptionValue[RandomSeeding], Automatic :> RandomInteger[2^31-1]] ];
       If[OptionValue[Connected],
         Table[
-          {toGraph[Length[degrees], opt]@check@sampler@"generateConnSample"[], sampler@"getLogProb"[]},
+          {toGraph[Length[degrees], opt]@check@sampler@"generateConnSample"[OptionValue[Exponent]], sampler@"getLogProb"[]},
           {n}
         ]
         ,
         Table[
-          {toGraph[Length[degrees], opt]@check@sampler@"generateSample"[], sampler@"getLogProb"[]},
+          {toGraph[Length[degrees], opt]@check@sampler@"generateSample"[OptionValue[Exponent]], sampler@"getLogProb"[]},
           {n}
         ]
       ]
     ]
 CGSSample[degrees_, opt : OptionsPattern[]] := catch@First@check@CGSSample[degrees, 1, opt]
 
-Options[CGSSampleProp] = {
-  Connected -> False
+
+Options[CGSSampleWeights] = {
+  Connected -> False,
+  RandomSeeding -> Automatic,
+  Exponent -> 1
 };
-SyntaxInformation[CGSSampleProp] = {"ArgumentsPattern" -> {_, _, _, OptionsPattern[]}};
-CGSSampleProp[degrees_, prop_, n_Integer ? NonNegative, opt : OptionsPattern[]] :=
-    catch@Module[{sampler = Make["ConnectedGraphSampler"], values, weights},
+CGSSampleWeights[degrees_, n_Integer ? NonNegative, opt : OptionsPattern[]] :=
+    catch@Block[{sampler = Make["ConnectedGraphSampler"]},
       check@sampler@"setDS"[degrees];
-      {values, weights} = Transpose@If[OptionValue[Connected],
+      sampler@"seed"[ Replace[OptionValue[RandomSeeding], Automatic :> RandomInteger[2^31-1]] ];
+      If[OptionValue[Connected],
         Table[
-          {prop@toGraph[Length[degrees]]@check@sampler@"generateConnSample"[], sampler@"getLogProb"[]},
+          check@sampler@"generateConnSample"[OptionValue[Exponent]];
+          sampler@"getLogProb"[],
           {n}
         ]
         ,
         Table[
-          {prop@toGraph[Length[degrees]]@check@sampler@"generateSample"[], sampler@"getLogProb"[]},
+          check@sampler@"generateSample"[OptionValue[Exponent]];
+          sampler@"getLogProb"[],
           {n}
         ]
-      ];
+      ]
+    ]
+
+
+Options[CGSSampleProp] = {
+  Connected -> False,
+  RandomSeeding -> Automatic,
+  Exponent -> 1
+};
+SyntaxInformation[CGSSampleProp] = {"ArgumentsPattern" -> {_, _, _, OptionsPattern[]}};
+CGSSampleProp[degrees_, prop_, n_Integer ? NonNegative, opt : OptionsPattern[]] :=
+    CGSToWeightedData@CGSSamplePropRaw[degrees, prop, n, opt]
+
+
+Options[CGSSamplePropRaw] = {
+  Connected -> False,
+  RandomSeeding -> Automatic,
+  Exponent -> 1
+};
+SyntaxInformation[CGSSamplePropRaw] = {"ArgumentsPattern" -> {_, _, _, OptionsPattern[]}};
+CGSSamplePropRaw[degrees_, prop_, n_Integer ? NonNegative, opt : OptionsPattern[]] :=
+    catch@Block[{sampler = Make["ConnectedGraphSampler"]},
+      check@sampler@"setDS"[degrees];
+      sampler@"seed"[ Replace[OptionValue[RandomSeeding], Automatic :> RandomInteger[2^31-1]] ];
+      If[OptionValue[Connected],
+        Table[
+          {prop@toGraph[Length[degrees]]@check@sampler@"generateConnSample"[OptionValue[Exponent]], sampler@"getLogProb"[]},
+          {n}
+        ]
+        ,
+        Table[
+          {prop@toGraph[Length[degrees]]@check@sampler@"generateSample"[OptionValue[Exponent]], sampler@"getLogProb"[]},
+          {n}
+        ]
+      ]
+    ]
+
+CGSToWeightedData[data_] :=
+    Module[{weights, values},
+      {values, weights} = Transpose[data];
       weights = weights - Min[weights];
       WeightedData[values, Exp[-weights]]
     ]

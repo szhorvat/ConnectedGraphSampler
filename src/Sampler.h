@@ -8,15 +8,14 @@
 #include <stdexcept>
 #include <tuple>
 #include <random>
+#include <cmath>
 
 namespace CDS {
 
 template<typename RNG>
-std::tuple<edgelist_t, double> sample(DegreeSequence ds, RNG &rng) {
+std::tuple<edgelist_t, double> sample(DegreeSequence ds, double alpha, RNG &rng) {
     if (! ds.is_graphical())
         throw std::invalid_argument("The degree sequence is not graphical.");
-
-    typedef vector<char> bitmask_t;
 
     edgelist_t edges;
     double logprob = 0;
@@ -24,10 +23,14 @@ std::tuple<edgelist_t, double> sample(DegreeSequence ds, RNG &rng) {
     if (ds.n == 0)
         return {edges, logprob};
 
-    bitmask_t exclusion(ds.n);
-    int vertex = 0;
+    int vertex = 0; // The current vertex that we are connecting up
+    bitmask_t exclusion(ds.n); // If exclusion[v] == true, 'vertex' may not connect to v
 
+    // List of vertices that the current vertex can connect to without breaking graphicality.
     vector<int> allowed;
+
+    // Vertices are chosen with a weight equal to the number of their stubs.
+    // This si equivalent to choosing stubs uniformly.
     vector<double> weights;
 
     while (true) {
@@ -59,7 +62,7 @@ std::tuple<edgelist_t, double> sample(DegreeSequence ds, RNG &rng) {
                 if (v != vertex && ! exclusion[v]) {
                     work.connect(vertex, v);
                     allowed.push_back(v);
-                    weights.push_back(ds[v]);
+                    weights.push_back(std::pow(ds[v], alpha));
                     d--;
                 }
             }
@@ -78,7 +81,7 @@ std::tuple<edgelist_t, double> sample(DegreeSequence ds, RNG &rng) {
                 if (ds[v] >= wd) {
                     if (v != vertex && ! exclusion[v]) {
                         allowed.push_back(v);
-                        weights.push_back(ds[v]);
+                        weights.push_back(std::pow(ds[v], alpha));
                     }
                 } else {
                     break;

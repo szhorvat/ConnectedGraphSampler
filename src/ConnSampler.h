@@ -9,31 +9,34 @@
 #include <stdexcept>
 #include <tuple>
 #include <random>
+#include <cmath>
 
 namespace CDS {
 
 template<typename RNG>
-std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, RNG &rng) {
-    // Null graph considered non-connected
+std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG &rng) {
+    // The null graph is considered non-connected.
     if (ds.n == 0)
         throw std::invalid_argument("The degree sequence is not potentially connected.");
 
     if (! ds.is_graphical())
         throw std::invalid_argument("The degree sequence is not graphical.");
 
-    typedef vector<char> bitmask_t;
-
-    EquivClass conn_tracker(ds); // connectivity tracker
+    EquivClass conn_tracker(ds); // Connectivity tracker
     if (! conn_tracker.is_potentially_connected())
         throw std::invalid_argument("The degree sequence is not potentially connected.");
 
     edgelist_t edges;
     double logprob = 0;
 
-    bitmask_t exclusion(ds.n);
-    int vertex = 0;
+    int vertex = 0; // The current vertex that we are connecting up
+    bitmask_t exclusion(ds.n); // If exclusion[v] == true, 'vertex' may not connect to v
 
+    // List of vertices that the current vertex can connect to without breaking graphicality / connectedness.
     vector<int> allowed;
+
+    // Vertices are chosen with a weight equal to the number of their stubs.
+    // This si equivalent to choosing stubs uniformly.
     vector<double> weights;
 
     while (true) {
@@ -68,7 +71,6 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, RNG &rng) {
                 int v = ds.sorted_verts[i--];
                 Assert(work[v] > 0);
                 if (v != vertex && ! exclusion[v]) {
-                    // mma::mout << "TC: " << vertex << "-" << v << " ";
                     work.connect(vertex, v);
                     if ( comp_count == 1 ||
                          edge_count == 1 ||
@@ -76,7 +78,7 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, RNG &rng) {
                          (conn_tracker.get_class(v) != supernode && (d_supernode > 1 || conn_tracker.get_class(v)->degree() > 1)) )
                     {
                         allowed.push_back(v);
-                        weights.push_back(ds[v]);
+                        weights.push_back(std::pow(ds[v], alpha));
                     }
                     d--;
                 }
@@ -101,7 +103,7 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, RNG &rng) {
                              (conn_tracker.get_class(v) != supernode && (d_supernode > 1 || conn_tracker.get_class(v)->degree() > 1)) )
                         {
                             allowed.push_back(v);
-                            weights.push_back(ds[v]);
+                            weights.push_back(std::pow(ds[v], alpha));
                         }
                     }
                 } else {
