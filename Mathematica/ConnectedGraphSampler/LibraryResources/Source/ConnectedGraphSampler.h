@@ -1,4 +1,7 @@
 
+#ifndef CONNECTED_GRAPH_SAMPLER
+#define CONNECTED_GRAPH_SAMPLER
+
 #include <LTemplate.h>
 
 #define Assert massert
@@ -12,8 +15,8 @@ using namespace CDS;
 
 class ConnectedGraphSampler {
 
-    DegreeSequence *ds;
     std::mt19937 rng;
+    DegreeSequence *ds;
 
     edgelist_t edges;
     double logprob;
@@ -22,8 +25,8 @@ public:
 
     ConnectedGraphSampler() :
         rng{std::random_device{}()},
-        logprob(0),
-        ds(new DegreeSequence)
+        ds(new DegreeSequence),
+        logprob(0)
     { }
 
     ~ConnectedGraphSampler() { delete ds; }
@@ -80,3 +83,5 @@ public:
         return getEdges();
     }
 };
+
+#endif // CONNECTED_GRAPH_SAMPLER

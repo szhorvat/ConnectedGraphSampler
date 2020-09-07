@@ -70,7 +70,8 @@ class EquivClass {
 
 public:
 
-    explicit EquivClass(const DegreeSequence &ds) :
+    template<typename Container>
+    explicit EquivClass(const Container &ds) :
         n(ds.size()),
         n_supernodes(n)
     {

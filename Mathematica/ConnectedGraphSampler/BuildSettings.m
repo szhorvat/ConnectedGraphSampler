@@ -4,7 +4,7 @@
 Switch[$OperatingSystem,
   "MacOSX", (* Compilation settings for OS X *)
   $buildSettings = {
-    "CompileOptions" -> {"-std=c++14", "-O3", "-march=native"}
+    "CompileOptions" -> {"-std=c++14", "-O3"}
 
     (*
     , "IncludeDirectories" -> {}
@@ -14,7 +14,7 @@ Switch[$OperatingSystem,
 
   "Unix", (* Compilation settings for Linux *)
   $buildSettings = {
-    "CompileOptions" -> {"-std=c++14", "-O3", "-march=native"}
+    "CompileOptions" -> {"-std=c++14", "-O3"}
 
     (*
     , "IncludeDirectories" -> {}

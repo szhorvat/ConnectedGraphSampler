@@ -30,7 +30,7 @@ std::tuple<edgelist_t, double> sample(DegreeSequence ds, double alpha, RNG &rng)
     vector<int> allowed;
 
     // Vertices are chosen with a weight equal to the number of their stubs.
-    // This si equivalent to choosing stubs uniformly.
+    // This is equivalent to choosing stubs uniformly.
     vector<double> weights;
 
     while (true) {
@@ -97,6 +97,8 @@ std::tuple<edgelist_t, double> sample(DegreeSequence ds, double alpha, RNG &rng)
         std::discrete_distribution<> choose(weights.begin(), weights.end());
 
         int u = allowed[choose(rng)];
+
+        logprob += (alpha - 1) * std::log(ds[u]);
 
         exclusion[u] = 1;
 

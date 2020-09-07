@@ -1,26 +1,37 @@
-#ifndef CDS_CONN_SAMPLER_H
-#define CDS_CONN_SAMPLER_H
+#ifndef CDS_CONN_MULTI_SAMPLER_H
+#define CDS_CONN_MULTI_SAMPLER_H
+
+#include <tuple>
+#include <algorithm>
+#include <map>
+#include <random>
 
 #include "Common.h"
-#include "DegreeSequence.h"
 #include "EquivClass.h"
-
-#include <vector>
-#include <stdexcept>
-#include <tuple>
-#include <random>
-#include <cmath>
 
 namespace CDS {
 
 template<typename RNG>
-std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG &rng) {
+std::tuple<edgelist_t, double> sample_conn_multi(std::vector<deg_t> ds, double alpha, RNG &rng) {
+    using std::vector;   
+
+    const int n = ds.size();
+
     // The null graph is considered non-connected.
-    if (ds.n == 0)
+    if (n == 0)
         throw std::invalid_argument("The degree sequence is not potentially connected.");
 
-    if (! ds.is_graphical())
-        throw std::invalid_argument("The degree sequence is not graphical.");
+    deg_t dmax = 0;
+    int dsum = 0;
+
+    for (const auto &d : ds) {
+        if (d > dmax)
+            dmax = d;
+        dsum += d;
+    }
+
+    if (dsum % 2 == 1 || dsum < 2*dmax)
+        throw std::invalid_argument("The degree sequence is not multigraphical.");
 
     EquivClass conn_tracker(ds); // Connectivity tracker
     if (! conn_tracker.is_potentially_connected())
@@ -29,10 +40,12 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG 
     edgelist_t edges;
     double logprob = 0;
 
-    int vertex = 0; // The current vertex that we are connecting up
-    bitmask_t exclusion(ds.n); // If exclusion[v] == true, 'vertex' may not connect to v
+    if (n == 0)
+        return {edges, logprob};
 
-    // List of vertices that the current vertex can connect to without breaking graphicality / connectedness.
+    int vertex = 0; // The current vertex that we are connecting up
+
+    // List of vertices that the current vertex can connect to without breaking multigraphicality.
     vector<int> allowed;
 
     // Vertices are chosen with a weight equal to the number of their stubs.
@@ -41,12 +54,11 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG 
 
     while (true) {
         if (ds[vertex] == 0) { // No more stubs left on current vertex
-            if (vertex == ds.n - 1) // All vertices have been processed
-                return {edges, logprob};
+            if (vertex == n - 1) // All vertices have been processed
+                break;
 
-            // Advance to next vertex and clear exclusion
+            // Advance to next vertex
             vertex += 1;
-            std::fill(exclusion.begin(), exclusion.end(), 0);
             continue;
         }
 
@@ -55,59 +67,36 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG 
 
         // Construct allowed set
         {
-            // Temporarily connect all but one stub of 'vertex' to highest-degree
-            // non-excluded vertices. All of these are allowed connections.
-            DegreeSequence work = ds;
-
-            int d = ds[vertex];
-
             auto supernode = conn_tracker.get_class(vertex);
             int d_supernode = supernode->degree();
             int comp_count = conn_tracker.component_count();
             int edge_count = conn_tracker.edge_count();
 
-            int i=ds.n-1;
-            while (d > 1) {
-                int v = ds.sorted_verts[i--];
-                Assert(work[v] > 0);
-                if (v != vertex && ! exclusion[v]) {
-                    work.connect(vertex, v);
+            if (dsum > 2*dmax || ds[vertex] == dmax) {
+                // We can connect to any other vertex
+
+                for (int v=vertex+1; v < n; ++v)
                     if ( comp_count == 1 ||
                          edge_count == 1 ||
                          (d_supernode > 2 && edge_count > comp_count - 1) ||
                          (conn_tracker.get_class(v) != supernode && (d_supernode > 1 || conn_tracker.get_class(v)->degree() > 1)) )
                     {
                         allowed.push_back(v);
-                        weights.push_back(std::pow(ds[v], alpha));
+                        weights.push_back(ds[v]);
                     }
-                    d--;
-                }
-            }
+            } else {
+                // We can only connect to max degree vertices
 
-            // Remove the final stub of 'vertex'.
-            work.decrement(vertex);
-
-            // Find watershed degree.
-            int wd = work.watershed();
-
-            // Of the rest of the vertices, determine if a connection is allowed
-            // based on the watershed degree.
-            for (; i >= 0; --i) {
-                int v = ds.sorted_verts[i];
-
-                if (ds[v] >= wd) {
-                    if (v != vertex && ! exclusion[v]) {
+                for (int v=vertex+1; v < n; ++v) {
+                    if (ds[v] == dmax)
                         if ( comp_count == 1 ||
                              edge_count == 1 ||
                              (d_supernode > 2 && edge_count > comp_count - 1) ||
                              (conn_tracker.get_class(v) != supernode && (d_supernode > 1 || conn_tracker.get_class(v)->degree() > 1)) )
                         {
                             allowed.push_back(v);
-                            weights.push_back(std::pow(ds[v], alpha));
+                            weights.push_back(ds[v]);
                         }
-                    }
-                } else {
-                    break;
                 }
             }
         }
@@ -123,14 +112,36 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG 
 
         logprob += (alpha - 1) * std::log(ds[u]);
 
-        exclusion[u] = 1;
+        ds[u] -= 1;
+        ds[vertex] -=1;
 
-        ds.connect(u, vertex);
+        dsum -= 2;
+        if (ds[vertex] == dmax-1 || ds[u] == dmax-1) {
+            // Recompute dmax
+            dmax -= 1;
+            for (const auto &d : ds)
+                if (d > dmax)
+                    dmax = d;
+        }
+
         conn_tracker.connect(u, vertex);
         edges.push_back({vertex, u});
     }
+
+    // Not all multigraphs correspond to the same number of leaves on the decision tree.
+    // Therefore, we must correct the sampling weight.
+
+    std::map<edge, int> multiplicities;
+    for (const auto &e : edges)
+        multiplicities[e] += 1;
+
+    for (const auto &el : multiplicities)
+        if (el.second > 1)
+            logprob -= logfact(el.second);
+
+    return {edges, logprob};
 }
 
 } // namespace CDS
 
-#endif // CDS_CONN_SAMPLER_H
+#endif // CSD_CONN_MULTI_SAMPLER_H
