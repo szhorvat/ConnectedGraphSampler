@@ -13,7 +13,7 @@ template<typename T>
 class EquivClassElement {
     T val;
     EquivClassElement *equiv;
-    int deg;
+    deg_t deg;
 
 public:
 
@@ -26,7 +26,7 @@ public:
     T value() const { return val; }
 
     void set_degree(int deg_) { deg = deg_; }
-    int degree() const { return deg; }
+    deg_t degree() const { return deg; }
 
     EquivClassElement *get_class_elem() {
         EquivClassElement *final = equiv;
@@ -140,6 +140,20 @@ public:
 
     bool is_potentially_connected() const {
         return !closed && n_edges >= n_supernodes-1;
+    }
+
+    // Returns true if connecting u to v will not break potential connectivity
+    bool connectable(int u, int v) const {
+        auto cu = get_class(u);
+        auto cv = get_class(v);
+
+        deg_t cud = cu->degree();
+        deg_t cvd = cv->degree();
+
+        return n_supernodes == 1 ||
+               n_edges == 1 ||
+               (cud > 2 && n_edges > n_supernodes - 1) ||
+               (cv != cu && (cud > 1 || cvd > 1));
     }
 };
 

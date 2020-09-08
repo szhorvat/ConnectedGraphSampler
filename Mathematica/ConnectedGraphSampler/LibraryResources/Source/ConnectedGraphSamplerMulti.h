@@ -6,8 +6,8 @@
 
 #define Assert massert
 
-#include "../../../../src/MultiSampler.h"
-#include "../../../../src/ConnMultiSampler.h"
+#include "../../../../src/SamplerMulti.h"
+#include "../../../../src/ConnSamplerMulti.h"
 
 #include <random>
 
@@ -16,7 +16,7 @@ using namespace CDS;
 class ConnectedGraphSamplerMulti {
 
     std::mt19937 rng;
-    std::vector<deg_t> ds;
+    DegreeSequenceMulti *ds;
 
     edgelist_t edges;
     double logprob;
@@ -25,20 +25,23 @@ public:
 
     ConnectedGraphSamplerMulti() :
         rng{std::random_device{}()},
+        ds(new DegreeSequenceMulti),
         logprob(0)
     { }
 
     void seed(mint s) { rng.seed(s); }
 
     void setDS(mma::IntTensorRef degseq) {
-        ds.assign(degseq.begin(), degseq.end());
+        auto old_ds = ds;
+        ds = new DegreeSequenceMulti(degseq.begin(), degseq.end());
+        delete old_ds;
 
         edges.clear();
         logprob = 0;
     }
 
     mma::IntTensorRef getDS() const {
-        return mma::makeVector<mint>(ds.size(), ds.data());
+        return mma::makeVector<mint>(ds->degrees().size(), ds->degrees().data());
     }
 
     auto getEdges() const {
@@ -55,12 +58,12 @@ public:
     }
 
     mma::IntMatrixRef generateSample(double alpha) {
-        std::tie(edges, logprob) = CDS::sample_multi(ds, alpha, rng);
+        std::tie(edges, logprob) = CDS::sample_multi(*ds, alpha, rng);
         return getEdges();
     }
 
     mma::IntMatrixRef generateConnSample(double alpha) {
-        std::tie(edges, logprob) = CDS::sample_conn_multi(ds, alpha, rng);
+        std::tie(edges, logprob) = CDS::sample_conn_multi(*ds, alpha, rng);
         return getEdges();
     }
 };

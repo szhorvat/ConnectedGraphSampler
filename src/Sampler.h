@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <tuple>
 #include <random>
+#include <algorithm>
+#include <numeric>
 #include <cmath>
 
 namespace CDS {

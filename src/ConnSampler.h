@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <tuple>
 #include <random>
+#include <algorithm>
+#include <numeric>
 #include <cmath>
 
 namespace CDS {
@@ -61,22 +63,13 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG 
 
             int d = ds[vertex];
 
-            auto supernode = conn_tracker.get_class(vertex);
-            int d_supernode = supernode->degree();
-            int comp_count = conn_tracker.component_count();
-            int edge_count = conn_tracker.edge_count();
-
             int i=ds.n-1;
             while (d > 1) {
                 int v = ds.sorted_verts[i--];
                 Assert(work[v] > 0);
                 if (v != vertex && ! exclusion[v]) {
                     work.connect(vertex, v);
-                    if ( comp_count == 1 ||
-                         edge_count == 1 ||
-                         (d_supernode > 2 && edge_count > comp_count - 1) ||
-                         (conn_tracker.get_class(v) != supernode && (d_supernode > 1 || conn_tracker.get_class(v)->degree() > 1)) )
-                    {
+                    if ( conn_tracker.connectable(vertex, v) ) {
                         allowed.push_back(v);
                         weights.push_back(std::pow(ds[v], alpha));
                     }
@@ -97,11 +90,7 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG 
 
                 if (ds[v] >= wd) {
                     if (v != vertex && ! exclusion[v]) {
-                        if ( comp_count == 1 ||
-                             edge_count == 1 ||
-                             (d_supernode > 2 && edge_count > comp_count - 1) ||
-                             (conn_tracker.get_class(v) != supernode && (d_supernode > 1 || conn_tracker.get_class(v)->degree() > 1)) )
-                        {
+                        if ( conn_tracker.connectable(vertex, v) ) {
                             allowed.push_back(v);
                             weights.push_back(std::pow(ds[v], alpha));
                         }
