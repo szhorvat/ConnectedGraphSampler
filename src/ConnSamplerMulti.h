@@ -62,7 +62,7 @@ std::tuple<edgelist_t, double> sample_conn_multi(DegreeSequenceMulti ds, double 
                 for (int v=vertex+1; v < ds.n; ++v)
                     if ( conn_tracker.connectable(vertex, v) ) {
                         allowed.push_back(v);
-                        weights.push_back(ds[v]);
+                        weights.push_back(std::pow(ds[v], alpha));
                     }
             } else {
                 // We can only connect to max degree vertices
@@ -71,7 +71,7 @@ std::tuple<edgelist_t, double> sample_conn_multi(DegreeSequenceMulti ds, double 
                     if (ds[v] == ds.dmax)
                         if ( conn_tracker.connectable(vertex, v) ) {
                             allowed.push_back(v);
-                            weights.push_back(ds[v]);
+                            weights.push_back(std::pow(ds[v], alpha));
                         }
             }
         }

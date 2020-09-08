@@ -52,17 +52,17 @@ std::tuple<edgelist_t, double> sample_multi(DegreeSequenceMulti ds, double alpha
         if (ds.dsum > 2*ds.dmax || ds[vertex] == ds.dmax) {
             // We can connect to any other vertex
 
-            for (int i=vertex+1; i < ds.n; ++i) {
-                allowed.push_back(i);
-                weights.push_back(ds[i]);
+            for (int v=vertex+1; v < ds.n; ++v) {
+                allowed.push_back(v);
+                weights.push_back(std::pow(ds[v], alpha));
             }
         } else {
             // We can only connect to max degree vertices
 
-            for (int i=vertex+1; i < ds.n; ++i) {
-                if (ds[i] == ds.dmax) {
-                    allowed.push_back(i);
-                    weights.push_back(ds[i]);
+            for (int v=vertex+1; v < ds.n; ++v) {
+                if (ds[v] == ds.dmax) {
+                    allowed.push_back(v);
+                    weights.push_back(std::pow(ds[v], alpha));
                 }
             }
         }
