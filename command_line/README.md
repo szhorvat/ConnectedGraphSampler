@@ -6,6 +6,7 @@ This directory contains a command line program `cdsample` that provides an inter
  - [CMake](https://cmake.org/)
  - The [Boost](https://www.boost.org/) library for [Boost Program Options](https://www.boost.org/doc/libs/release/libs/program_options/).
 
+The program was tested with Apple Clang 11.0 on macOS and with gcc 7.5 on Linux, using boost 1.71 in both cases.
 
 ### Compiling
 
