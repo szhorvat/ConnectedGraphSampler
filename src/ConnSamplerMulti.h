@@ -103,7 +103,7 @@ std::tuple<edgelist_t, double> sample_conn_multi(DegreeSequenceMulti ds, double 
         if (el.second > 1)
             logprob -= logfact(el.second);
 
-    return {edges, logprob};
+    return std::make_tuple(edges, logprob);
 }
 
 } // namespace CDS

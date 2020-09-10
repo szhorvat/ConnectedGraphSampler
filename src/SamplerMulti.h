@@ -24,7 +24,7 @@ std::tuple<edgelist_t, double> sample_multi(DegreeSequenceMulti ds, double alpha
     double logprob = 0;
 
     if (ds.n == 0)
-        return {edges, logprob};
+        return std::make_tuple(edges, logprob);
 
     int vertex = 0; // The current vertex that we are connecting up
 
@@ -93,7 +93,7 @@ std::tuple<edgelist_t, double> sample_multi(DegreeSequenceMulti ds, double alpha
         if (el.second > 1)
             logprob -= logfact(el.second);
 
-    return {edges, logprob};
+    return std::make_tuple(edges, logprob);
 }
 
 } // namespace CDS

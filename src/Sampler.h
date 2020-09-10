@@ -23,7 +23,7 @@ std::tuple<edgelist_t, double> sample(DegreeSequence ds, double alpha, RNG &rng)
     double logprob = 0;
 
     if (ds.n == 0)
-        return {edges, logprob};
+        return std::make_tuple(edges, logprob);
 
     int vertex = 0; // The current vertex that we are connecting up
     bitmask_t exclusion(ds.n); // If exclusion[v] == true, 'vertex' may not connect to v
@@ -38,7 +38,7 @@ std::tuple<edgelist_t, double> sample(DegreeSequence ds, double alpha, RNG &rng)
     while (true) {
         if (ds[vertex] == 0) { // No more stubs left on current vertex
             if (vertex == ds.n - 1) // All vertices have been processed
-                return {edges, logprob};
+                return std::make_tuple(edges, logprob);
 
             // Advance to next vertex and clear exclusion
             vertex += 1;

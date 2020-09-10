@@ -44,7 +44,7 @@ std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG 
     while (true) {
         if (ds[vertex] == 0) { // No more stubs left on current vertex
             if (vertex == ds.n - 1) // All vertices have been processed
-                return {edges, logprob};
+                return std::make_tuple(edges, logprob);
 
             // Advance to next vertex and clear exclusion
             vertex += 1;
