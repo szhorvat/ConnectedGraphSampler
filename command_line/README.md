@@ -2,11 +2,11 @@ This directory contains a command line program `cdsample` that provides an inter
 
 ### Prerequisites
 
- - A C++ compiler with C++14 support
- - [CMake](https://cmake.org/)
- - The [Boost](https://www.boost.org/) library for [Boost Program Options](https://www.boost.org/doc/libs/release/libs/program_options/).
+ - A C++ compiler with C++14 support.
+ - [CMake](https://cmake.org/).
+ - The [Boost](https://www.boost.org/) library for [Boost Program Options](https://www.boost.org/doc/libs/release/libs/program_options/). On Debian-based Linux systems, it can be installed using `sudo apt install libboost-program-options-dev`.
 
-The program was tested with Apple Clang 11.0 on macOS and with gcc 7.5 on Linux, using boost 1.71 in both cases.
+The program was tested with Apple Clang 11.0 on macOS and with gcc 5.4 on Linux, using boost 1.58.
 
 ### Compiling
 
