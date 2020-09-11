@@ -1,5 +1,5 @@
-#ifndef CDS_CONN_MULTI_SAMPLER_H
-#define CDS_CONN_MULTI_SAMPLER_H
+#ifndef CDS_CONN_SAMPLER_MULTI_H
+#define CDS_CONN_SAMPLER_MULTI_H
 
 #include "Common.h"
 #include "DegreeSequenceMulti.h"
@@ -14,6 +14,7 @@
 
 namespace CDS {
 
+// Sample connected loop-free multigraphs
 template<typename RNG>
 std::tuple<edgelist_t, double> sample_conn_multi(DegreeSequenceMulti ds, double alpha, RNG &rng) {
     using std::vector;   
@@ -108,4 +109,4 @@ std::tuple<edgelist_t, double> sample_conn_multi(DegreeSequenceMulti ds, double 
 
 } // namespace CDS
 
-#endif // CSD_CONN_MULTI_SAMPLER_H
+#endif // CDS_CONN_SAMPLER_MULTI_H

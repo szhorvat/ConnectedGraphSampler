@@ -14,6 +14,7 @@
 
 namespace CDS {
 
+// Sample simple graphs
 template<typename RNG>
 std::tuple<edgelist_t, double> sample(DegreeSequence ds, double alpha, RNG &rng) {
     if (! ds.is_graphical())

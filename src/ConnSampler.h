@@ -15,6 +15,7 @@
 
 namespace CDS {
 
+// Sample connected simple graphs
 template<typename RNG>
 std::tuple<edgelist_t, double> sample_conn(DegreeSequence ds, double alpha, RNG &rng) {
     // The null graph is considered non-connected.
