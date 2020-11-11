@@ -18,10 +18,10 @@ cd build
 cmake ..
 ```
 
-If the configuration succeeded, run `make`:
+If the configuration has succeeded, build the program using
 
 ```
-make
+cmake --build .
 ```
 
 An executable named `cdsample` will be created in the current directory.
